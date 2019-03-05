@@ -1,5 +1,7 @@
 # Carteira Digital - Scrapper
 
+Scrapper capaz de realizar login e extrair informações financeiras como valor alocado em ações e em fundos.
+
 ## Corretoras e softwares implementados:
 
 - Smartt Bot
