@@ -1,5 +1,12 @@
 # Carteira Digital - Scrapper
 
+## Corretoras e softwares implementados:
+
+- Smartt Bot
+- Rico
+- Clear
+- GuiaBolso
+
 ## Requerimentos
 
 - Python 3
