@@ -19,7 +19,7 @@ for file in files:
     format = file_split[0]
 
     if format == 'rico':
-        # RicoFormat.format_json(f)
+        RicoFormat.format_json(f)
         print('Rico')
     elif format == 'clear':
         ClearFormat.format_json(f)
@@ -28,5 +28,5 @@ for file in files:
         # ClearFormat.format_json(f)
         print('smartt_bot')
     elif format == 'guiabolso':
-        # GuiaBolsoFormat.format_json(f)
+        GuiaBolsoFormat.format_json(f)
         print('guiabolso')

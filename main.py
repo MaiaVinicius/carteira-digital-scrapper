@@ -62,10 +62,13 @@ def scrap_guiabolso():
 
 
 def scrap_all():
+    scrap_guiabolso()
     scrap_clear()
     scrap_rico()
-    scrap_guiabolso()
     scrap_smartt_bot()
 
-
+# scrap_smartt_bot()
+# scrap_clear()
+# scrap_guiabolso()
 scrap_all()
+# scrap_rico()

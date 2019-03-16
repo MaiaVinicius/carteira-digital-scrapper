@@ -22,4 +22,19 @@ def format_json(json):
 
         blocked_application = model.get_application_id(provider_id, 15)
         if account:
-            model.update_balance(blocked_application['current_account_id'], blocked_application['application_id'], blocked_amount, date)
+            model.update_balance(blocked_application['current_account_id'], blocked_application['application_id'],
+                                 blocked_amount, date)
+
+        stocks = json['stock']
+        for stock in stocks:
+            current_total = format_currency(stock['current_total'])
+            buy_total = format_currency(stock["buy_total"])
+
+            stock_application_id = model.get_application_id(provider_id, 10, stock["symbol"])
+
+            if stock_application_id:
+                model.update_balance(stock_application_id['current_account_id'], stock_application_id['application_id'],
+                                     current_total, date)
+
+                model.update_stock(stock["symbol"], stock_application_id['application_id'], current_total, False, buy_total,
+                                   stock["qtd"])

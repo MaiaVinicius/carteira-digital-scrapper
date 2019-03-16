@@ -1,3 +1,5 @@
 selenium
 python-dotenv
 mysql-connector
+.idea/
+__pycache__

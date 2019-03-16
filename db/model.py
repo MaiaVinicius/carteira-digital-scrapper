@@ -5,6 +5,17 @@ from db import connection
 mydb = connection.mydb
 
 
+def update_stock(stock_symbol, application_id, balance, buy_date, initial_balance, qtd):
+    mycursor = mydb.cursor()
+
+    sql = "UPDATE current_account_applications SET balance = %s, initial_balance= %s, quantity= %s WHERE description= %s AND id= %s"
+
+    val = (balance, initial_balance, qtd, stock_symbol, application_id)
+    mycursor.execute(sql, val)
+
+    mydb.commit()
+
+
 def update_balance(current_account_id, application_id, balance, date=datetime.datetime.today().strftime('%Y-%m-%d')):
     mycursor = mydb.cursor()
 

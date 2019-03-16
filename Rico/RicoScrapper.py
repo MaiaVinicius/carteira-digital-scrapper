@@ -79,6 +79,7 @@ class RicoScrapper:
             except:
                 pass
 
+        # pega os valores de renda fixa
         self.driver.get('https://www.rico.com.vc/dashboard/renda-fixa/')
 
         try:
@@ -101,6 +102,65 @@ class RicoScrapper:
                         'profitability': tds[1].text,
                         'expires': tds[3].text
                     })
+                except:
+                    pass
+
+        except:
+            pass
+
+        # pega os dados de fundo
+        self.driver.get("https://www.rico.com.vc/arealogada/fundos-de-investimento/ordens")
+        tbody = self.driver.find_element_by_xpath('//*[@id="app"]/div/main/div/section[2]/div/div[2]/table/tbody')
+        trs = tbody.find_elements_by_css_selector('tr')
+        for tr in trs:
+            tds = tr.find_elements_by_css_selector('td')
+
+            balance_total = tds[4].text
+            initial_balance = tds[2].text
+
+            if balance_total == "0,00":
+                liquidacao = tds[5].text
+
+                balance_total = liquidacao
+                initial_balance = liquidacao
+
+                print(liquidacao)
+
+            balance['applications'].append({
+                'type': 'fundo',
+                'type_id': 11,
+                'description': tds[0].find_element_by_css_selector('span').text,
+                'initial_balance': initial_balance,
+                'balance': balance_total,
+                'buy_date': tds[1].text
+            })
+
+        # pega os valores de tesouro direto
+        self.driver.get("https://www.rico.com.vc/dashboard/tesouro-direto/")
+
+        try:
+            treasure = self.driver.find_element_by_id('tableAllocatedValue')
+
+            tbody = treasure.find_elements_by_css_selector('tbody')[1]
+            trs = tbody.find_elements_by_css_selector('tr')
+
+            for tr in trs:
+                try:
+                    tds = tr.find_elements_by_css_selector('td')
+
+                    description = tds[0].text
+
+                    if description != '':
+                        balance['applications'].append({
+                            'type': 'tesouro',
+                            'type_id': 12,
+                            'description': description,
+                            'initial_balance': tds[3].text,
+                            'balance': tds[4].text,
+                            # 'buy_date': tds[1].text,
+                            # 'profitability': tds[1].text,
+                            'expires': tds[1].text
+                        })
                 except:
                     pass
 
