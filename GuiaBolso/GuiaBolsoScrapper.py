@@ -7,6 +7,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+from helpers import getMonthNumber
+
 
 class GuiaBolsoScrapper:
     initial_url = "https://www.guiabolso.com.br/comparador/#/login"
@@ -51,11 +53,62 @@ class GuiaBolsoScrapper:
         element = wait.until(EC.visibility_of_element_located((By.ID, "root")))
         print("Login finished")
 
+    def getMovements(self):
+        movements = []
+
+        self.driver.get('https://www.guiabolso.com.br/extrato')
+
+        sleep(2)
+
+        content = self.driver.find_element_by_id('main')
+        pagination = content.find_element_by_id('pagination')
+
+        for i in range(3):
+            ahref = pagination.find_elements_by_css_selector('a')[0]
+            ahref.click()
+
+            sleep(2)
+
+        sleep(5)
+        forms = content.find_elements_by_class_name('transactions-form')
+
+        for form in forms:
+            month = form.find_element_by_class_name('month').text
+            month_split = month.split(" ")
+            month = getMonthNumber(month_split[0])
+            year = month_split[2]
+
+            transactions = form.find_elements_by_class_name('transaction')
+
+            for transaction in transactions:
+                try:
+
+                    date = transaction.find_element_by_class_name('date').text.split(" ")[0]
+
+                    mov = {
+                        "date": year + "-" + month + "-" + date,
+                        "description": transaction.find_element_by_class_name('name').find_element_by_class_name(
+                            'edit').text,
+                        "amount": transaction.find_element_by_class_name('value-label').text,
+                        "category": transaction.find_element_by_class_name('category2').text
+                    }
+
+                    pprint(mov)
+                    movements.append(mov)
+                except:
+                    pass
+
+        return movements
+
     def scrap(self):
 
-        sleep(8)
+        movements = self.getMovements()
 
-        total = self.driver.find_element_by_class_name('hEMTnY')
+        self.driver.get('https://www.guiabolso.com.br/web/#/financas/resumo')
+
+        sleep(1)
+        wait = WebDriverWait(self.driver, 120)
+        total = wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "hEMTnY")))
 
         total_balance_btn = self.driver.find_element_by_class_name('eIwspU')
 
@@ -70,7 +123,8 @@ class GuiaBolsoScrapper:
 
         applications = {
             'accounts': [],
-            'overview': []
+            'overview': [],
+            'movements': movements
         }
 
         sleep(2)

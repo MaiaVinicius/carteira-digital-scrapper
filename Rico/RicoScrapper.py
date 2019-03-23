@@ -1,4 +1,5 @@
 # coding=utf-8
+from datetime import datetime
 from pprint import pprint
 from time import sleep
 
@@ -46,20 +47,69 @@ class RicoScrapper:
         print("Intro Skiped")
 
     def scrap(self):
+        balance = {
+            "applications_summary": [],
+            "applications": [],
+            "in_account": self.driver.find_element_by_xpath('//*[@id="tableAllocatedValue"]/tfoot/tr[2]/td[4]').text,
+            'movements': [],
+            "total": self.driver.find_element_by_xpath('//*[@id="tableAllocatedValue"]/tfoot/tr[3]/td[4]').text
+        }
+        balance["movements"] = self.getMovements()
+
+        # pega os valores de tesouro direto
+        self.driver.get("https://www.rico.com.vc/dashboard/tesouro-direto/")
+        description = ""
+
+        treasure = self.driver.find_element_by_id('tableAllocatedValue')
+
+        tbody = treasure.find_elements_by_css_selector('tbody')[1]
+        trs = tbody.find_elements_by_css_selector('tr')
+
+        # roda por cada tr clicando no btn de mais para expandir
+        for tr in trs:
+            tds = tr.find_elements_by_css_selector('td')
+
+            try:
+                plus_btn = tr.find_element_by_class_name('plus-indicator')
+                plus_btn.click()
+                description = tds[0].text
+
+                print(description)
+            except Exception as e:
+                print(tr.text)
+
+                try:
+                    th = tr.find_element_by_css_selector('th')
+                except Exception as e:
+                    print("tesouro encotrado!")
+
+                    print(tr.text)
+
+                    if tds[4].text!='':
+                        tesouro = {
+                            'type': 'tesouro',
+                            'type_id': 12,
+                            'description': description,
+                            'initial_balance': tds[4].text,
+                            'quantity': tds[3].text,
+                            'balance': tds[5].text,
+                            'buy_date': tds[1].text,
+                            'profitability': tds[0].text,
+                            'expires': tds[2].text
+                        }
+                        pprint(tesouro)
+
+                        balance['applications'].append(tesouro)
+
+        self.driver.get("https://www.rico.com.vc/dashboard/")
+        sleep(2)
+
         self.skip_intro()
 
         print("Scrapping ... ")
 
         table = self.driver.find_element_by_id("tableAllocatedValue")
-
         rows = table.find_element_by_css_selector("tbody").find_elements_by_class_name("user-select-none")
-        balance = {
-            "applications_summary": [],
-            "applications": [],
-            "in_account": self.driver.find_element_by_xpath('//*[@id="tableAllocatedValue"]/tfoot/tr[2]/td[4]').text,
-            ''
-            "total": self.driver.find_element_by_xpath('//*[@id="tableAllocatedValue"]/tfoot/tr[3]/td[4]').text
-        }
 
         for row in rows:
             tds = row.find_elements_by_css_selector('td')
@@ -135,39 +185,53 @@ class RicoScrapper:
                 'buy_date': tds[1].text
             })
 
-        # pega os valores de tesouro direto
-        self.driver.get("https://www.rico.com.vc/dashboard/tesouro-direto/")
-
-        try:
-            treasure = self.driver.find_element_by_id('tableAllocatedValue')
-
-            tbody = treasure.find_elements_by_css_selector('tbody')[1]
-            trs = tbody.find_elements_by_css_selector('tr')
-
-            for tr in trs:
-                try:
-                    tds = tr.find_elements_by_css_selector('td')
-
-                    description = tds[0].text
-
-                    if description != '':
-                        balance['applications'].append({
-                            'type': 'tesouro',
-                            'type_id': 12,
-                            'description': description,
-                            'initial_balance': tds[3].text,
-                            'balance': tds[4].text,
-                            # 'buy_date': tds[1].text,
-                            # 'profitability': tds[1].text,
-                            'expires': tds[1].text
-                        })
-                except:
-                    pass
-
-        except:
-            pass
-
         return balance
+
+    def monthdelta(self, date, delta):
+        m, y = (date.month + delta) % 12, date.year + ((date.month) + delta - 1) // 12
+        if not m: m = 12
+        d = min(date.day, [31,
+                           29 if y % 4 == 0 and not y % 400 == 0 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][
+            m - 1])
+        return date.replace(day=d, month=m, year=y)
+
+    def getMovements(self):
+        movements = []
+
+        self.driver.get("https://www.rico.com.vc/dashboard/conta/extrato/")
+        datestart = self.monthdelta(datetime.now(), -3).strftime("%d/%m/%Y")
+        dateend = datetime.today()
+
+        date_start_ipt = self.driver.find_element_by_xpath(
+            '/html/body/section/div/div[2]/div/div/section/div/form/div/div[1]/div/input')
+        date_start_ipt.clear()
+        date_start_ipt.send_keys(datestart)
+
+        sleep(3)
+
+        table = self.driver.find_element_by_xpath('/html/body/section/div/div[2]/div/div/section/div/table')
+        tbody = table.find_element_by_css_selector('tbody')
+        trs = tbody.find_elements_by_css_selector('tr')
+
+        for tr in trs:
+            tds = tr.find_elements_by_css_selector('td')
+            date_liquidation = tds[0]
+            date_sent = tds[1]
+            description = tds[2]
+            amount = tds[3]
+            balance_after = tds[4]
+
+            movements.append({
+                "date_liquidation": date_liquidation.text,
+                "date_sent": date_sent.text,
+                "description": description.text,
+                "amount": amount.text,
+                "balance_after": balance_after.text,
+            })
+
+        # pprint(movements)
+
+        return movements
 
     def wait_login(self):
         wait = WebDriverWait(self.driver, 10)

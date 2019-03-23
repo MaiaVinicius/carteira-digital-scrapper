@@ -3,9 +3,13 @@ from pprint import pprint
 from time import sleep
 
 from selenium import webdriver
+from selenium.webdriver import DesiredCapabilities, ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+from helpers import getMonthNumber
 
 
 class ClearScrapper:
@@ -21,11 +25,20 @@ class ClearScrapper:
         self.password = password
         self.birthdate = birthdate
 
+    def _get(self, url):
+        self.driver.get(url)
+        sleep(15)
+
     def init(self):
         path = "/Users/maiavinicius/PycharmProjects/minha_carteira/driver/chromedriver-mac"
-        self.driver = webdriver.Chrome(path)
+        caps = DesiredCapabilities().CHROME
+        # caps["pageLoadStrategy"] = "normal"  #  complete
+        # caps["pageLoadStrategy"] = "eager"  # interactive
+        caps["pageLoadStrategy"] = "none"
 
-        self.driver.get(self.initial_url)
+        self.driver = webdriver.Chrome(path, desired_capabilities=caps)
+
+        self._get(self.initial_url)
         self.login()
         self.wait_login()
         res = self.scrap()
@@ -52,13 +65,62 @@ class ClearScrapper:
         element = wait.until(EC.visibility_of_element_located((By.ID, "wide")))
         print("Login finished")
 
-        self.driver.get("https://www.clear.com.br/pit/Selector/ToNew")
+        self._get("https://www.clear.com.br/pit/Selector/ToNew")
 
         wait = WebDriverWait(self.driver, 10)
         element = wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "logo_header")))
         print("Login finished")
 
+
+    def getMovements(self):
+        movements = []
+        self._get("https://novopit.clear.com.br/MinhaConta/ExtratoFinanceiro")
+
+        self.driver.switch_to.frame(self.driver.find_element_by_class_name("ifm"))
+
+        wait = WebDriverWait(self.driver, 20)
+        element = wait.until(EC.visibility_of_element_located((By.ID, "grouper-list")))
+
+        select_period = Select(self.driver.find_element_by_id('combo-filter-range'))
+        select_period.select_by_value('60')
+        #
+        sleep(5)
+        months = self.driver.find_element_by_class_name('container_body_stmt').find_elements_by_class_name('cont_month')
+
+        for month_div in months:
+            month = month_div.find_element_by_class_name('cont_left')
+            year = month.find_element_by_class_name('grouper-year').text
+            month = getMonthNumber(month.find_element_by_class_name('grouper-month').text)
+
+            table = month_div.find_element_by_class_name('cblc')
+
+            tbody = table.find_element_by_class_name('entries-cblc-holder')
+            trs = tbody.find_elements_by_css_selector('tr')
+
+            for tr in trs:
+                actions = ActionChains(self.driver)
+                actions.move_to_element(tr).perform()
+
+                sleep(0.2)
+
+                tds = tr.find_elements_by_css_selector('td')
+                movements.append({
+                    "date_liquidation": year + "-" + month + "-" + tds[0].find_element_by_class_name(
+                        'entry-date-day').text,
+                    "date_sent": year + "-" + month + "-" + tds[1].find_element_by_class_name('entry-mov-day').text,
+                    "description": tds[2].find_element_by_class_name('entry-description').text,
+                    "amount": tds[3].find_element_by_class_name('entry-value').text,
+                    "balance_after": tds[4].find_element_by_class_name('entry-balance').text,
+                })
+
+        pprint(movements)
+        return movements
+
     def scrap(self):
+        movements = self.getMovements()
+
+        self._get("https://novopit.clear.com.br/MinhaConta/MeusAtivos")
+
         self.driver.switch_to.frame(self.driver.find_element_by_class_name("ifm"))
 
         wait = WebDriverWait(self.driver, 20)
@@ -67,12 +129,14 @@ class ClearScrapper:
         sleep(2)
         try:
             total_amount = self.driver.find_element_by_class_name("value-total").text
-            in_account_amount = self.driver.find_element_by_xpath('//*[@id="view-list"]/li[2]/a/div[2]/span[1]/i[2]').text
+            in_account_amount = self.driver.find_element_by_xpath(
+                '//*[@id="view-list"]/li[2]/a/div[2]/span[1]/i[2]').text
 
             applications = {
                 "in_account": in_account_amount,
                 "total": total_amount,
                 "stock": [],
+                "movements": movements,
                 "applications": [
                     {
 
