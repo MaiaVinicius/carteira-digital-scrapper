@@ -57,8 +57,9 @@ class GuiaBolsoScrapper:
         movements = []
 
         self.driver.get('https://www.guiabolso.com.br/extrato')
-
         sleep(2)
+
+        banks_divs = self.driver.find_elements_by_class_name('unstyled')
 
         content = self.driver.find_element_by_id('main')
         pagination = content.find_element_by_id('pagination')
@@ -69,34 +70,56 @@ class GuiaBolsoScrapper:
 
             sleep(2)
 
-        sleep(5)
-        forms = content.find_elements_by_class_name('transactions-form')
+        for banks_div in banks_divs:
+            print("Div encontrada")
+            i = 0
+            banks = banks_div.find_elements_by_css_selector('li')
 
-        for form in forms:
-            month = form.find_element_by_class_name('month').text
-            month_split = month.split(" ")
-            month = getMonthNumber(month_split[0])
-            year = month_split[2]
+            for bank in banks:
+                print("Percorrendo banco")
+                if i > 0:
+                    sleep(2)
 
-            transactions = form.find_elements_by_class_name('transaction')
+                    bank_number = bank.find_element_by_class_name('title').text
+                    bank.find_element_by_css_selector('a').click()
 
-            for transaction in transactions:
-                try:
+                    sleep(5)
+                    forms = content.find_elements_by_class_name('transactions-form')
 
-                    date = transaction.find_element_by_class_name('date').text.split(" ")[0]
-
-                    mov = {
-                        "date": year + "-" + month + "-" + date,
-                        "description": transaction.find_element_by_class_name('name').find_element_by_class_name(
-                            'edit').text,
-                        "amount": transaction.find_element_by_class_name('value-label').text,
-                        "category": transaction.find_element_by_class_name('category2').text
+                    bank_transaction = {
+                        "bank_number": bank_number,
+                        "transactions": []
                     }
 
-                    pprint(mov)
-                    movements.append(mov)
-                except:
-                    pass
+                    for form in forms:
+                        month = form.find_element_by_class_name('month').text
+                        month_split = month.split(" ")
+                        month = getMonthNumber(month_split[0])
+                        year = month_split[2]
+
+                        transactions = form.find_elements_by_class_name('transaction')
+
+                        for transaction in transactions:
+                            try:
+
+                                date = transaction.find_element_by_class_name('date').text.split(" ")[0]
+
+                                mov = {
+                                    "date": year + "-" + month + "-" + date,
+                                    "description": transaction.find_element_by_class_name(
+                                        'name').find_element_by_class_name(
+                                        'edit').text,
+                                    "amount": transaction.find_element_by_class_name('value-label').text,
+                                    "category": transaction.find_element_by_class_name('category').text
+                                }
+
+                                pprint(mov)
+                                bank_transaction['transactions'].append(mov)
+                            except Exception as e:
+                                print(e)
+                                pass
+                    movements.append(bank_transaction)
+                i += 1
 
         return movements
 

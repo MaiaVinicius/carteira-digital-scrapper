@@ -2,7 +2,7 @@
 from pprint import pprint
 
 from db import model
-from helpers import format_currency
+from helpers import format_currency, parse_transaction
 
 
 def get_provider_bank_id(bank_name):
@@ -35,6 +35,7 @@ def get_application_id(application_name):
 
 def format_json(json):
     accounts = json['accounts']
+    transactions = json['movements']
     date = json['date']
 
     for account in accounts:
@@ -50,7 +51,6 @@ def format_json(json):
 
             db_application = model.get_application_id(provider_id, application_type_id)
 
-
             if db_application:
                 model.update_balance(
                     db_application['current_account_id'],
@@ -58,3 +58,7 @@ def format_json(json):
                     balance,
                     date
                 )
+    for transaction in transactions:
+        pprint(transaction)
+        type, to_account, in_out, amount = parse_transaction(transaction["description"], transaction["amount"])
+        pprint(type)

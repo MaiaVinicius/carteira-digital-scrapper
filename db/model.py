@@ -37,12 +37,20 @@ def update_balance(current_account_id, application_id, balance, date=datetime.da
     print(mycursor.rowcount, "record(s) affected")
 
 
-def get_application_id(provider_id, application_type_id, description=''):
+def get_application_id(provider_id, application_type_id, description='', buy_date=None, account_id=None):
     mycursor = mydb.cursor()
+
+    buy_date_sql = ""
+    if buy_date:
+        buy_date_sql = " AND ca.buy_date='" + buy_date + "'"
+
+    current_account_sql = ""
+    if account_id:
+        current_account_sql = " OR ca.id='" + str(account_id) + "' "
 
     mycursor.execute("SELECT ca.current_account_id, ca.id, ca.description FROM current_account_applications ca"
                      " LEFT JOIN current_accounts cc ON cc.id=ca.current_account_id "
-                     "WHERE cc.provider_id=%s AND ca.application_type_id=%s AND (%s LIKE concat(ca.description, '%') OR %s='') "
+                     "WHERE cc.provider_id=%s AND ca.application_type_id=%s AND (%s LIKE concat(ca.description, '%') OR %s='') " + buy_date_sql + current_account_sql +
                      "LIMIT 1",
                      (provider_id, application_type_id, description, description))
 
@@ -54,3 +62,21 @@ def get_application_id(provider_id, application_type_id, description=''):
             'application_id': x[1],
             'description': x[2],
         }
+
+
+# def register_transaction(application_id)
+
+
+def get_account_by_number(number):
+    mycursor = mydb.cursor()
+
+    mycursor.execute("SELECT caa.id FROM current_accounts ca "
+                     "INNER JOIN current_account_applications caa ON ca.id=caa.current_account_id "
+                     "WHERE replace(ca.account_number, '-','')=%s", (number,))
+
+    myresult = mycursor.fetchall()
+
+    if myresult:
+        return myresult[0][0]
+    else:
+        return None
