@@ -1,7 +1,7 @@
 import datetime
 from pprint import pprint
 
-from db.model import get_account_by_number, get_application_id
+from db.model import get_account_by_number, get_application_id, get_application_id_by_amount
 
 
 def format_currency(value):
@@ -59,48 +59,95 @@ def getMonthNumber(month_string):
 def parse_transaction(str, amount, provider_id=None, buy_date=None):
     type = None
     to_account = None
+    from_account = None
     application_type = None
-    application_id = None
     amount = format_currency(amount)
 
     str = str.upper()
 
-    if "TED" in str:
+    if "TAXA " in str or "SEGURO" in str or "DOC/TED INTERNET" in str:
+        type = 2
+        to_account = -1
+        # from_account = 0
+    elif ("TED" in str or "DOC" in str or "TRANSFERÊNCIA" in str or "TRANSF.AUT" in str) and "FUNDO" not in str:
         type = 1
-        application_type = 0
-        if "CTA" in str:
-            to_split = str.split("CTA ")
-            to_split = to_split[1].split(" -")
-            to_account = to_split[0]
+        # application_type = 0
 
-            if to_account:
-                application_id = get_account_by_number(to_account)
+        # pega a conta para qual foi feita a transferencia
+        if amount < 0:
+            # from_account = 0
+            if "CTA" in str:
+                to_split = str.split("CTA ")
+                to_split = to_split[1].split(" -")
+                to_account = to_split[0]
+
+                if to_account:
+                    to_account = get_account_by_number(to_account)
+        # else:
+        #     to_account = 0
     elif "PREGÃO" in str:
         type = 11
         application_type = 10
+
+        # pega qual ação foi aplicada
+        if amount < 0:
+            to_account = get_application_id_by_amount(amount * -1, application_type)
+            # from_account = 0
+
     elif "TIT PUBLICOS" in str or "TITLS.PUBL" in str:
         type = 11
         application_type = 12
 
-        application = get_application_id(provider_id, application_type, '', buy_date)
-        if application:
-            application_id = application['application_id']
-    elif "IR " in str or "IOF " in str:
+        if amount < 0:
+            # from_account = 0
+            application = get_application_id(provider_id, application_type, '', buy_date)
+            if application:
+                to_account = application['application_id']
+        # else:
+        #     to_account = 0
+
+    elif "IR " in str or "IOF" in str or "LIS" in str or "ISS" in str or "IRRF" in str:
         type = 3
-    elif "TAXA " in str:
-        type = 2
-    elif "FUNDO DE INVESTIMENTO " in str:
+        # from_account = 0
+        to_account = -2
+    elif "FUNDO" in str:
         type = 11
         application_type = 11
+        # pega qual ação foi aplicada
+        if amount < 0:
+            to_account = get_application_id_by_amount(amount * -1, application_type)
+            # from_account = 0
+        # else:
+            # from_account = get_application_id_by_amount(amount, application_type)
+            # to_account = 0
     elif "COE  " in str:
         type = 11
         application_type = 9
+        # from_account = 0
+    elif "CDB " in str:
+        type = 11
+        application_type = 9
+        # from_account = 0
+    elif "AJUSTE DAY-TRADE " in str:
+        type = 5
+        application_type = 15
+        if amount>0:
+            from_account = -1
+        else:
+            to_account=-1
+        # to_account = 0
     elif "COMPRA " in str:
         type = 10
+        # from_account = 0
+    elif "PAGTO" in str:
+        type = 12
+        # to_account = 0
 
-    if amount > 0:
-        in_out = "I"
-    else:
-        in_out = "O"
+    if from_account == None:
+        if amount < 0:
+            from_account = 0
+    if to_account == None:
+        if amount > 0:
+            to_account = 0
 
-    return type, in_out, amount, application_type, application_id
+    return type, amount, application_type, to_account, from_account

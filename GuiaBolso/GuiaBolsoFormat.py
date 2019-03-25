@@ -2,6 +2,7 @@
 from pprint import pprint
 
 from db import model
+from db.model import clear_transactions, register_transaction, search_bank_by_number
 from helpers import format_currency, parse_transaction
 
 
@@ -58,7 +59,39 @@ def format_json(json):
                     balance,
                     date
                 )
-    for transaction in transactions:
-        pprint(transaction)
-        type, to_account, in_out, amount = parse_transaction(transaction["description"], transaction["amount"])
-        pprint(type)
+
+    # atualiza extrato
+    banks = json['movements']
+
+    for bank in banks:
+        provider_id = 0
+        current_account_id = 0
+        transactions = bank['transactions']
+
+        provider_id = search_bank_by_number(bank['bank_number'])
+        db_application = model.get_application_id(provider_id, 0)
+        if not db_application:
+            db_application = model.get_application_id(provider_id, 1)
+
+        if db_application and provider_id:
+            current_account_id = db_application["application_id"]
+
+            clear_transactions(provider_id)
+
+            for transaction in transactions:
+
+                date = transaction['date']
+                description = transaction["description"]
+
+                movement_type, amount, application_type, to_account, from_account = \
+                    parse_transaction(description, transaction["amount"], provider_id,
+                                      date)
+                if to_account == 0:
+                    to_account = current_account_id
+
+                if from_account == 0:
+                    from_account = current_account_id
+
+                # print(to_account)
+                register_transaction(amount, from_account, to_account, date, description, movement_type,
+                                     provider_id)

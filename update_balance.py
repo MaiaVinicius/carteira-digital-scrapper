@@ -7,6 +7,8 @@ from GuiaBolso import GuiaBolsoFormat
 from Rico import RicoFormat
 from pprint import pprint
 
+from db.model import fix_movements
+
 date = datetime.datetime.today().strftime('%Y-%m-%d')
 dir = 'output/' + date + '/'
 files = os.listdir(dir)
@@ -30,3 +32,5 @@ for file in files:
     elif format == 'guiabolso':
         GuiaBolsoFormat.format_json(f)
         print('guiabolso')
+
+fix_movements()
