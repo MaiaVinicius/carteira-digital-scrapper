@@ -1,3 +1,4 @@
+import datetime
 from pprint import pprint
 
 from db import model
@@ -52,17 +53,21 @@ def format_json(json):
         for transaction in transactions:
             # pprint(transaction)
             date = transaction['date_liquidation']
-            description = transaction["description"]
+            try:
+                datetime.datetime.strptime(date, '%Y-%m-%d')
+                description = transaction["description"]
 
-            movement_type, amount, application_type, to_account, from_account = \
-                parse_transaction(description, transaction["amount"], provider_id,
-                                  date)
+                movement_type, amount, application_type, to_account, from_account, proceed = \
+                    parse_transaction(description, transaction["amount"], provider_id,
+                                      date)
 
-            if to_account == 0:
-                to_account = current_account_id
+                if to_account == 0:
+                    to_account = current_account_id
 
-            if from_account == 0:
-                from_account = current_account_id
+                if from_account == 0:
+                    from_account = current_account_id
 
-            # print(to_account)
-            register_transaction(amount, from_account, to_account, date, description, movement_type, provider_id)
+                # print(to_account)
+                register_transaction(amount, from_account, to_account, date, description, movement_type, provider_id)
+            except:
+                pass

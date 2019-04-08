@@ -27,7 +27,6 @@ def format_json(json):
         balance = format_currency(application['balance'])
 
         if db_application:
-            print(2)
             model.update_balance(
                 db_application['current_account_id'],
                 db_application['application_id'],
@@ -44,7 +43,7 @@ def format_json(json):
         date = convert_date(transaction['date_liquidation'])
         description = transaction["description"]
 
-        movement_type, amount, application_type, to_account, from_account = \
+        movement_type, amount, application_type, to_account, from_account, proceed = \
             parse_transaction(description, transaction["amount"], provider_id,
                               date)
 

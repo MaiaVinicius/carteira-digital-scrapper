@@ -20,7 +20,10 @@ def format_currency(value):
 
 
 def convert_date(date):
-    return datetime.datetime.strptime(date, "%d/%m/%Y").strftime("%Y-%m-%d")
+    if date:
+        return datetime.datetime.strptime(date, "%d/%m/%Y").strftime("%Y-%m-%d")
+    else:
+        return False
 
 
 def getMonthNumber(month_string):
@@ -58,6 +61,7 @@ def getMonthNumber(month_string):
 
 def parse_transaction(str, amount, provider_id=None, buy_date=None):
     type = None
+    proceed = True
     to_account = None
     from_account = None
     application_type = None
@@ -69,6 +73,9 @@ def parse_transaction(str, amount, provider_id=None, buy_date=None):
         type = 2
         to_account = -1
         # from_account = 0
+    elif "PAGTO" in str or "PORTABILIDADE" in str:
+        type = 12
+        # to_account = 0
     elif ("TED" in str or "DOC" in str or "TRANSFERÊNCIA" in str or "TRANSF.AUT" in str) and "FUNDO" not in str:
         type = 1
         # application_type = 0
@@ -118,8 +125,8 @@ def parse_transaction(str, amount, provider_id=None, buy_date=None):
             to_account = get_application_id_by_amount(amount * -1, application_type)
             # from_account = 0
         # else:
-            # from_account = get_application_id_by_amount(amount, application_type)
-            # to_account = 0
+        # from_account = get_application_id_by_amount(amount, application_type)
+        # to_account = 0
     elif "COE  " in str:
         type = 11
         application_type = 9
@@ -128,20 +135,27 @@ def parse_transaction(str, amount, provider_id=None, buy_date=None):
         type = 11
         application_type = 9
         # from_account = 0
+    elif "POUPANÇA " in str:
+        type = 11
+        application_type = 1
+
+        if amount < 0:
+            to_account = get_application_id_by_amount(amount * -1, application_type)
+        # from_account = 0
     elif "AJUSTE DAY-TRADE " in str:
         type = 5
         application_type = 15
-        if amount>0:
+        if amount > 0:
             from_account = -1
         else:
-            to_account=-1
+            to_account = -1
         # to_account = 0
     elif "COMPRA " in str:
         type = 10
         # from_account = 0
-    elif "PAGTO" in str:
-        type = 12
-        # to_account = 0
+    elif "CANCELADO" in str:
+        proceed = False
+        # from_account = 0
 
     if from_account == None:
         if amount < 0:
@@ -150,4 +164,4 @@ def parse_transaction(str, amount, provider_id=None, buy_date=None):
         if amount > 0:
             to_account = 0
 
-    return type, amount, application_type, to_account, from_account
+    return type, amount, application_type, to_account, from_account, proceed

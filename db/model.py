@@ -16,15 +16,20 @@ def update_stock(stock_symbol, application_id, balance, buy_date, initial_balanc
     mydb.commit()
 
 
-def update_balance(current_account_id, application_id, balance, date=datetime.datetime.today().strftime('%Y-%m-%d')):
+def update_balance(current_account_id, application_id, balance, date=False):
     mycursor = mydb.cursor()
+    sqlDate = ""
 
-    return
-    mycursor.execute("DELETE FROM balance where current_account_id=%s AND application_id=%s and DATE=%s",
-                     (current_account_id, application_id, date))
+    if date:
+        sqlDate = "and date='" + str(date) + "'"
+
+
+    # return
+    mycursor.execute("DELETE FROM balance where current_account_id=%s AND application_id=%s " + sqlDate,
+                     (current_account_id, application_id))
 
     sql = "INSERT INTO balance (current_account_id, application_id, balance, date) VALUES (%s, %s, %s, %s)"
-    val = (current_account_id, application_id, balance, date)
+    val = (current_account_id, application_id, balance, datetime.datetime.today().strftime('%Y-%m-%d'))
     mycursor.execute(sql, val)
 
     mydb.commit()
@@ -46,11 +51,12 @@ def get_application_id(provider_id, application_type_id, description='', buy_dat
         buy_date_sql = " AND (ca.buy_date BETWEEN DATE_SUB('" + buy_date + "', INTERVAL 3 DAY) AND " \
                                                                            "DATE_ADD('" + buy_date + "', INTERVAL 3 DAY) )"
 
+
     current_account_sql = ""
     if account_id:
         current_account_sql = " OR ca.id='" + str(account_id) + "' "
 
-    mycursor.execute("SELECT ca.current_account_id, ca.id, ca.description FROM current_account_applications ca"
+    mycursor.execute("SELECT ca.current_account_id, ca.id, ca.description, cc.holder_name FROM current_account_applications ca"
                      " LEFT JOIN current_accounts cc ON cc.id=ca.current_account_id "
                      "WHERE cc.provider_id=%s AND ca.application_type_id=%s AND (%s LIKE concat(ca.description, '%') OR %s='') " + buy_date_sql + current_account_sql +
                      "LIMIT 1",
@@ -59,10 +65,12 @@ def get_application_id(provider_id, application_type_id, description='', buy_dat
     myresult = mycursor.fetchall()
 
     for x in myresult:
+
         return {
             'current_account_id': x[0],
             'application_id': x[1],
             'description': x[2],
+            'holder_name': x[3],
         }
 
 

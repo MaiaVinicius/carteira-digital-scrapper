@@ -17,6 +17,8 @@ def get_provider_bank_id(bank_name):
         provider_id = 8
     elif bank_name == u'Banco Itaú Unibanco S.A.':
         provider_id = 9
+    elif bank_name == u'Nubank':
+        provider_id = 14
 
     return provider_id
 
@@ -83,15 +85,17 @@ def format_json(json):
                 date = transaction['date']
                 description = transaction["description"]
 
-                movement_type, amount, application_type, to_account, from_account = \
+                movement_type, amount, application_type, to_account, from_account, proceed = \
                     parse_transaction(description, transaction["amount"], provider_id,
                                       date)
-                if to_account == 0:
-                    to_account = current_account_id
 
-                if from_account == 0:
-                    from_account = current_account_id
+                if proceed:
+                    if to_account == 0:
+                        to_account = current_account_id
 
-                # print(to_account)
-                register_transaction(amount, from_account, to_account, date, description, movement_type,
-                                     provider_id)
+                    if from_account == 0:
+                        from_account = current_account_id
+
+                    # print(to_account)
+                    register_transaction(amount, from_account, to_account, date, description, movement_type,
+                                         provider_id)

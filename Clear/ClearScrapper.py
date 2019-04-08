@@ -27,14 +27,14 @@ class ClearScrapper:
 
     def _get(self, url):
         self.driver.get(url)
-        sleep(15)
+        sleep(1)
 
     def init(self):
         path = "/Users/maiavinicius/PycharmProjects/minha_carteira/driver/chromedriver-mac"
         caps = DesiredCapabilities().CHROME
         # caps["pageLoadStrategy"] = "normal"  #  complete
         # caps["pageLoadStrategy"] = "eager"  # interactive
-        caps["pageLoadStrategy"] = "none"
+        # caps["pageLoadStrategy"] = "none"
 
         self.driver = webdriver.Chrome(path, desired_capabilities=caps)
 
@@ -71,7 +71,6 @@ class ClearScrapper:
         element = wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "logo_header")))
         print("Login finished")
 
-
     def getMovements(self):
         movements = []
         self._get("https://novopit.clear.com.br/MinhaConta/ExtratoFinanceiro")
@@ -88,20 +87,26 @@ class ClearScrapper:
         months = self.driver.find_element_by_class_name('container_body_stmt').find_elements_by_class_name('cont_month')
 
         for month_div in months:
-            month = month_div.find_element_by_class_name('cont_left')
-            year = month.find_element_by_class_name('grouper-year').text
-            month = getMonthNumber(month.find_element_by_class_name('grouper-month').text)
+            month_div_el = month_div.find_element_by_class_name('cont_left')
 
             table = month_div.find_element_by_class_name('cblc')
 
             tbody = table.find_element_by_class_name('entries-cblc-holder')
             trs = tbody.find_elements_by_css_selector('tr')
 
+            i = 0
+            year = None
+            month = None
+
             for tr in trs:
                 actions = ActionChains(self.driver)
                 actions.move_to_element(tr).perform()
 
                 sleep(0.2)
+
+                if i == 0:
+                    year = month_div_el.find_element_by_class_name('grouper-year').text
+                    month = getMonthNumber(month_div_el.find_element_by_class_name('grouper-month').text)
 
                 tds = tr.find_elements_by_css_selector('td')
                 movements.append({
@@ -112,6 +117,8 @@ class ClearScrapper:
                     "amount": tds[3].find_element_by_class_name('entry-value').text,
                     "balance_after": tds[4].find_element_by_class_name('entry-balance').text,
                 })
+
+                i += 1
 
         pprint(movements)
         return movements

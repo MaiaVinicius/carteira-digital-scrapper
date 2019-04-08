@@ -82,8 +82,7 @@ class SantanderScrapper:
         # self.driver.switch_to.frame("Principal")
         # self.driver.switch_to.frame("Corpo")
         self.driver.switch_to.frame("iframePrinc")
-
-        body = self.driver.find_element_by_id('frmFatura')
+        self.driver.switch_to.frame("iDetalhes")
 
         html = self.driver.page_source
 

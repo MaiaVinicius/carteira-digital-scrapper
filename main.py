@@ -3,6 +3,8 @@ import json
 import os
 from dotenv import load_dotenv
 
+from Santander.SantanderScrapper import SantanderScrapper
+
 load_dotenv(verbose=True)
 
 from Clear.ClearScrapper import ClearScrapper
@@ -61,14 +63,23 @@ def scrap_guiabolso():
         save_output('guiabolso', res)
 
 
+def scrap_santander():
+    guiabolso_scrapper = SantanderScrapper(os.getenv("SANTANDER_CPF"), os.getenv("SANTANDER_PWD"),
+                                           os.getenv("SANTANDER_LAST_DIGITS"))
+
+    res = guiabolso_scrapper.init()
+
+
 def scrap_all():
     scrap_guiabolso()
     scrap_clear()
     scrap_rico()
     scrap_smartt_bot()
 
+
 # scrap_smartt_bot()
 # scrap_clear()
 # scrap_guiabolso()
 scrap_all()
 # scrap_rico()
+# scrap_santander()

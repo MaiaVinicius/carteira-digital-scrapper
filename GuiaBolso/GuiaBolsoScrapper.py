@@ -37,7 +37,8 @@ class GuiaBolsoScrapper:
     def login(self):
         sleep(5)
 
-        email_ipt = self.driver.find_element_by_xpath('//*[@id="app"]/div/div/div/main/form/div[1]/input')
+        wait = WebDriverWait(self.driver, 160)
+        email_ipt = wait.until(EC.visibility_of_element_located((By.XPATH, '//*[@id="app"]/div/div/div/main/form/div[1]/input')))
         email_ipt.send_keys(self.email)
 
         pwd_ipt = self.driver.find_element_by_xpath('//*[@id="app"]/div/div/div/main/form/div[2]/input')
@@ -130,7 +131,7 @@ class GuiaBolsoScrapper:
         self.driver.get('https://www.guiabolso.com.br/web/#/financas/resumo')
 
         sleep(1)
-        wait = WebDriverWait(self.driver, 120)
+        wait = WebDriverWait(self.driver, 160)
         total = wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "hEMTnY")))
 
         total_balance_btn = self.driver.find_element_by_class_name('eIwspU')

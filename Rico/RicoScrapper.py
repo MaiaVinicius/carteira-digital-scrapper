@@ -85,7 +85,7 @@ class RicoScrapper:
 
                     print(tr.text)
 
-                    if tds[4].text!='':
+                    if tds[4].text != '':
                         tesouro = {
                             'type': 'tesouro',
                             'type_id': 12,
@@ -182,7 +182,7 @@ class RicoScrapper:
                 'description': tds[0].find_element_by_css_selector('span').text,
                 'initial_balance': initial_balance,
                 'balance': balance_total,
-                'buy_date': tds[1].text
+                'buy_date': False
             })
 
         return balance
@@ -246,7 +246,8 @@ class RicoScrapper:
 
     def fill_username(self):
         #         preenche o username
-        user_input = self.driver.find_element_by_xpath('//*[@id="loginForm"]/div[1]/input')
+        wait = WebDriverWait(self.driver, 10)
+        user_input = wait.until(EC.visibility_of_element_located((By.XPATH, '//*[@id="loginForm"]/div[1]/input')))
         user_input.send_keys(self.username)
 
         #         aperta enter
