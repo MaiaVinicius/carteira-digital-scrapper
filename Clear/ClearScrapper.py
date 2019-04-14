@@ -172,9 +172,13 @@ class ClearScrapper:
         stocks = stocks_container.find_elements_by_class_name('stock')
 
         for stock in stocks:
+
+            actions = ActionChains(self.driver)
+            actions.move_to_element(stock).perform()
+
             stock.click()
 
-            sleep(14)
+            sleep(5)
 
             stock_info_container = self.driver.find_element_by_class_name('container_equities')
             qtd = stock_info_container.find_element_by_class_name('position-quantity').text

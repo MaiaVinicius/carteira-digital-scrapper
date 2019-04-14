@@ -4,6 +4,7 @@ from time import sleep
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -33,7 +34,7 @@ class SantanderScrapper:
         return res
 
     def login(self):
-        sleep(10)
+        sleep(2)
 
         username_ipt = self.driver.find_element_by_xpath(
             '//*[@id="appHeader"]/header-desktop/header/div[2]/div/div[3]/login-field/div/form/div/div/div[1]/div/input')
@@ -42,7 +43,7 @@ class SantanderScrapper:
         submit_btn = self.driver.find_element_by_class_name('submit-button')
         submit_btn.click()
 
-        sleep(15)
+        sleep(2)
 
         self.driver.switch_to_frame("Principal")
         self.driver.switch_to_frame("MainFrame")
@@ -58,7 +59,7 @@ class SantanderScrapper:
         btn_submit.click()
 
     def wait_login(self):
-        sleep(10)
+        sleep(2)
         print("Login finished")
 
     def scrap(self):
@@ -77,18 +78,56 @@ class SantanderScrapper:
 
         btn_fatura.click()
         # ...
-        sleep(15)
+        sleep(2)
 
         # self.driver.switch_to.frame("Principal")
         # self.driver.switch_to.frame("Corpo")
         self.driver.switch_to.frame("iframePrinc")
+
+        select_box = self.driver.find_element_by_id("cboFatura")
+
+        select = Select(select_box)
+        # if your select_box has a name.. why use xpath?.....
+        # this step could use either xpath or name, but name is sooo much easier.
+
+        options = [x for x in select_box.find_elements_by_tag_name("option")]
+        # this part is cool, because it searches the elements contained inside of select_box
+        # and then adds them to the list options if they have the tag name "options"
+
         self.driver.switch_to.frame("iDetalhes")
 
-        html = self.driver.page_source
+        for element in options:
 
-        f = open('output/fatura.html', 'w')
+            month_label = ""
+            try:
+                option_value = element.get_attribute("value")
+                month_label = element.text
 
-        f.write(html)
-        f.close()
+                select.select_by_value(option_value)
+
+            except Exception as e:
+                print(e)
+                self.driver.switch_to.parent_frame()
+
+                continue
+
+            self.driver.execute_script("onExibir();")
+
+            sleep(2)
+
+            self.driver.switch_to.frame("iDetalhes")
+
+            html = self.driver.page_source
+
+            self.driver.switch_to.parent_frame()
+
+            month_label = month_label.replace(" - ", "|")
+            month_label = month_label.replace("/", "-")
+
+            f = open('output/credit-card/' + month_label + '.html', 'w+')
+            f.write(html)
+            f.close()
+
+        # cboFatura
 
         return True

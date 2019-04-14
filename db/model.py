@@ -23,7 +23,6 @@ def update_balance(current_account_id, application_id, balance, date=False):
     if date:
         sqlDate = "and date='" + str(date) + "'"
 
-
     # return
     mycursor.execute("DELETE FROM balance where current_account_id=%s AND application_id=%s " + sqlDate,
                      (current_account_id, application_id))
@@ -43,6 +42,47 @@ def update_balance(current_account_id, application_id, balance, date=False):
     print(mycursor.rowcount, "record(s) affected")
 
 
+def update_stock_balance(ticker, quantity, balance, date=False):
+    mycursor = mydb.cursor()
+    sqlDate = ""
+
+    individual_price = balance / quantity
+
+    if date:
+        sqlDate = "and date='" + str(date) + "'"
+
+    mycursor.execute(
+        "SELECT id, current_account_id, quantity FROM current_account_applications WHERE description=%s AND application_type_id=10",
+        (ticker,))
+
+    positions = mycursor.fetchall()
+
+    for position in positions:
+        application_id = position[0]
+        current_account_id = position[1]
+        qtd = position[2]
+
+        # return
+        mycursor.execute("DELETE FROM balance where current_account_id=%s AND application_id=%s " + sqlDate,
+                         (current_account_id, application_id))
+
+        sql = "INSERT INTO balance (current_account_id, application_id, balance, date) VALUES (%s, %s, %s, %s)"
+        val = (
+        current_account_id, application_id, individual_price * qtd, datetime.datetime.today().strftime('%Y-%m-%d'))
+        mycursor.execute(sql, val)
+
+    mydb.commit()
+
+    sql = "UPDATE current_account_applications SET balance = %s * quantity, updated_at=NOW() WHERE description=%s " \
+          "AND application_type_id=10"
+    val = (individual_price, ticker)
+    mycursor.execute(sql, val)
+
+    mydb.commit()
+
+    print(mycursor.rowcount, "record(s) affected")
+
+
 def get_application_id(provider_id, application_type_id, description='', buy_date=None, account_id=None):
     mycursor = mydb.cursor()
 
@@ -51,21 +91,20 @@ def get_application_id(provider_id, application_type_id, description='', buy_dat
         buy_date_sql = " AND (ca.buy_date BETWEEN DATE_SUB('" + buy_date + "', INTERVAL 3 DAY) AND " \
                                                                            "DATE_ADD('" + buy_date + "', INTERVAL 3 DAY) )"
 
-
     current_account_sql = ""
     if account_id:
         current_account_sql = " OR ca.id='" + str(account_id) + "' "
 
-    mycursor.execute("SELECT ca.current_account_id, ca.id, ca.description, cc.holder_name FROM current_account_applications ca"
-                     " LEFT JOIN current_accounts cc ON cc.id=ca.current_account_id "
-                     "WHERE cc.provider_id=%s AND ca.application_type_id=%s AND (%s LIKE concat(ca.description, '%') OR %s='') " + buy_date_sql + current_account_sql +
-                     "LIMIT 1",
-                     (provider_id, application_type_id, description, description))
+    mycursor.execute(
+        "SELECT ca.current_account_id, ca.id, ca.description, cc.holder_name FROM current_account_applications ca"
+        " LEFT JOIN current_accounts cc ON cc.id=ca.current_account_id "
+        "WHERE cc.provider_id=%s AND ca.application_type_id=%s AND (%s LIKE concat(ca.description, '%') OR %s='') " + buy_date_sql + current_account_sql +
+        "LIMIT 1",
+        (provider_id, application_type_id, description, description))
 
     myresult = mycursor.fetchall()
 
     for x in myresult:
-
         return {
             'current_account_id': x[0],
             'application_id': x[1],

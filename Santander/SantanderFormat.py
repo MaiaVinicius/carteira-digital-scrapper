@@ -1,4 +1,6 @@
 # try:
+import datetime
+import os
 from pprint import pprint
 
 from bs4 import BeautifulSoup
@@ -6,16 +8,37 @@ from bs4 import BeautifulSoup
 from db import model
 from db.model import register_transaction, clear_transactions
 from helpers import convert_date, format_currency
+import codecs
 
 provider_id = 15
+
+
+def parse_santander_html():
+    dir = 'output/credit-card/'
+
+    try:
+        months = os.listdir(dir)
+        clear_transactions(provider_id)
+
+        for month_file in months:
+            pprint(month_file)
+            with codecs.open(dir + month_file, 'r', encoding='utf-8',
+                             errors='ignore') as fdata:
+                format_html(fdata.read(), month_file)
+    except Exception as e:
+        print(e)
+        pass
 
 
 # except ImportError:
 #     from bs4 import BeautifulSoup
 
-def format_html(html):
+def format_html(html, filename):
     parsed_html = BeautifulSoup(html, 'html.parser')
-    table = parsed_html.findAll("table")[6]
+    if "em Aberto" in filename:
+        table = parsed_html.findAll("table")[13]
+    else:
+        table = parsed_html.findAll("table")[6]
 
     proximo_eh_item = False
     anterior_foi_item_divisao = False
@@ -74,7 +97,7 @@ def format_html(html):
     db_application = model.get_application_id(provider_id, 20, '', None)
     application_id = db_application["application_id"]
 
-    clear_transactions(provider_id)
+    pprint(transactions)
 
     for i in transactions:
         holder = transactions[i]
@@ -82,7 +105,6 @@ def format_html(html):
 
         if holder_name == db_application["holder_name"]:
             for transaction in holder["transactions"]:
-
                 date = convert_date(transaction['date'])
                 amount = format_currency(transaction['amountBRL']) * -1
                 description = transaction['description']

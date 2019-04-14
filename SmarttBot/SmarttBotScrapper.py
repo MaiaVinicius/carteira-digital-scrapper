@@ -47,10 +47,12 @@ class SmarttBotScrapper:
 
     def scrap(self):
         robots_ids = []
+        # abre o dropdown contendo os filtros dos robos
         dropdown_mode_btn = self.driver.find_element_by_xpath('//*[@id="instances-all-view"]/div[1]/div/div[3]/div/a')
         dropdown_mode_btn.click()
         sleep(0.2)
 
+        # clica na opcao "Reais"
         checkbox_simulationmode = self.driver.find_element_by_xpath(
             '//*[@id="instances-all-view"]/div[1]/div/div[3]/div/ul/li[2]/input')
         checkbox_simulationmode.click()
@@ -58,7 +60,7 @@ class SmarttBotScrapper:
         sleep(2)
 
         table_el = self.driver.find_element_by_xpath('//*[@id="instances-all-view"]/table')
-        table_body_el = table_el.find_elements_by_xpath('.//*')
+        table_body_el = table_el.find_elements_by_class_name('closed')
 
         data = {
             'bots': []
@@ -73,7 +75,7 @@ class SmarttBotScrapper:
 
                 try:
                     tds = tbody.find_elements_by_css_selector('td')
-                    bot_name = tds[4].text
+                    bot_name = tds[3].text
                     status = tds[7].text
 
                     if status != 'Carteira Zerada' and status != '-':
@@ -98,6 +100,8 @@ class SmarttBotScrapper:
                         }
 
                         data['bots'].append(current_line)
+
+                        expand_btn.click()
                 except Exception as e2:
                     print(e2)
 

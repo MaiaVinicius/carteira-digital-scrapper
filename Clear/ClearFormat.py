@@ -34,17 +34,9 @@ def format_json(json):
         stocks = json['stock']
         for stock in stocks:
             current_total = format_currency(stock['current_total'])
-            buy_total = format_currency(stock["buy_total"])
+            # buy_total = format_currency(stock["buy_total"])
 
-            stock_application_id = model.get_application_id(provider_id, 10, stock["symbol"])
-
-            if stock_application_id:
-                model.update_balance(stock_application_id['current_account_id'], stock_application_id['application_id'],
-                                     current_total, date)
-
-                model.update_stock(stock["symbol"], stock_application_id['application_id'], current_total, False,
-                                   buy_total,
-                                   stock["qtd"])
+            model.update_stock_balance(stock["symbol"], format_currency(stock['qtd']), current_total, date)
 
         # atualiza extrato
         transactions = json['movements']
